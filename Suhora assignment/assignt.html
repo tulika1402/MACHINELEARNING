@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic GIS Web App</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+  <style>
+    #map {
+      height: 500px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+<input type="text" id="addressInput" placeholder="Enter address">
+<button onclick="geocodeAddress()">Search</button>
+<input type="file" id="fileInput" accept=".geojson" />
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+<script src="https://api.opencagedata.com/geocode/v1/leaflet.js"></script>
+<script>
+  var map = L.map('map').setView([0, 0], 2);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  var drawnItems = new L.FeatureGroup();
+  map.addLayer(drawnItems);
+
+  var drawControl = new L.Control.Draw({
+    edit: {
+      featureGroup: drawnItems,
+      remove: true
+    },
+    draw: {
+      polygon: true,
+      polyline: true,
+      rectangle: true,
+      circle: true,
+      marker: true
+    }
+  });
+  map.addControl(drawControl);
+
+  document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+  function handleFileSelect(event) {
+    var file = event.target.files[0];
+
+    if (file) {
+      var reader = new FileReader();
+
+      reader.onload = function (e) {
+        var data = JSON.parse(e.target.result);
+        L.geoJSON(data).addTo(map);
+      };
+
+      reader.readAsText(file);
+    }
+  }
+
+  var geocoder = L.opencageGeocode({ key: 'YOUR_OPENCAGE_API_KEY' });
+
+  function geocodeAddress() {
+    var address = document.getElementById('addressInput').value;
+
+    geocoder.geocode(address, function (results) {
+      if (results.length > 0) {
+        var location = results[0].geometry;
+        map.setView([location.lat, location.lng], 12);
+        L.marker([location.lat, location.lng]).addTo(map);
+      } else {
+        alert('Address not found');
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
